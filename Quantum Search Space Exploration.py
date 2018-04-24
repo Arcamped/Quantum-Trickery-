@@ -6,6 +6,7 @@
 # QFT vs CR gates. Resource advantage for either?
 # Issue of noisy measurements?
 # Monte Carlos for unmodified time to exhaustion (UTTE?)
+# List of lists vs Data Frame?
 # Entanglement usage?
 
 
@@ -14,11 +15,12 @@ from pyquil.api import QVMConnection
 from pyquil.gates import H
 import numpy as np
 import pandas as pd
+import csv
 qvm = QVMConnection()
 
 number = 2 # Sets number of qubits to use. Hardware limited to <= 19 (18?)
 
-def n_die (number) :
+def n_qubits (number) :
     ''' takes as argument the number of qubits to apply Hadamard Gates to
     and measure. Outputs a concatenated string of measurements.'''
     q = Program()
@@ -29,30 +31,56 @@ def n_die (number) :
     #print (classical_mem3)
     return("".join([str(x) for x in classical_mem3]))
 
-print(n_die(number))
+print(n_qubits(number))
 
 
-# There appears to be an issue when one simulation runs longer than the others.
-# Error: "ValueError: Length of values does not match length of index"
-trials = 2
-df_trials = pd.DataFrame()
-container = []
-
+#Is it better to use a list of lists with list length being variable? Or a dataframe
+#with zero-valued entries after search space exhaustion?
+trials = 50
+master = [[] for j in range(trials)]
 for j in range(trials) :
-    global container
+    #global container
     container = []
-    for i in range(15) :
+    for i in range(30) :
         ''' Randomly generates results from search space until space is exhausted
             or the maximum number of iterations is reached'''
         if len(set(container)) < number ** 2 :
-            results = (n_die(number))
+            results = (n_qubits(number))
             container.append(results)
         else :
             break
-    df_trials[j] = container
-print(container)
-df_trials.shape
-print(df_trials)
+        master[(j)] = container
+with open("output.csv",'w', newline='') as resultFile:
+    wr = csv.writer(resultFile, dialect='excel')
+    for value in master:
+        wr.writerow([value])
+
+
+# Or with equal length columns and zero-valued, integer entries:
+master1 = [[] for j in range(trials)]
+for j in range(trials) :
+    #global container
+    container = []
+    for i in range(30) :
+        ''' Randomly generates results from search space until space is exhausted
+            or the maximum number of iterations is reached'''
+        if len(set(container)) < number ** 2 :
+            results = (n_qubits(number))
+            container.append(results)
+        else :
+            results = 0
+            container.append(results)
+        master1[(j)] = container
+with open("output1.csv",'w', newline='') as resultFile:
+    wr = csv.writer(resultFile, dialect='excel')
+    for value in master1:
+        wr.writerow([value])
+
+df_results = pd.DataFrame(master1)
+df_results = df_results.transpose()
+df_results.index += 1
+print(df_results)
+
 # Much of the above workflow is the same, but using the Hadamard Gate (H()) is no
 # longer appropriate beyond first measurement.
 # Instead, parametric gates will be used and updated between measurements.
@@ -96,14 +124,14 @@ print(qft3(0, 1, 2))
 
 ### Redundnat code kept around for example purposes and proofreading work:
 
-# This list stores results in the order n_die(number) generates them.
+# This list stores results in the order n_qubits(number) generates them.
 holder = []
 
 for i in range(15) :
     ''' Randomly generates results from search space until space is exhausted
         or the maximum number of iterations is reached'''
     if len(set(holder)) < number ** 2 :
-        results = (n_die(number))
+        results = (n_qubits(number))
         holder.append(results)
     else :
         break
@@ -115,9 +143,9 @@ quantum_dict = {}
 # Dictionary generation and storage method.
 # Currently, this code is of no use.
 for i in range(10) :
-    ''' Populates quantum_dict with n_die(number) draws until all possible states
+    ''' Populates quantum_dict with n_qubits(number) draws until all possible states
     are drawn or the specified number of iterations in range() is reached.'''
-    result = n_die(number)
+    result = n_qubits(number)
     if result not in quantum_dict.keys() and len(quantum_dict) < number ** 2 : #
         quantum_dict[result] = i + 1
         print(result)
