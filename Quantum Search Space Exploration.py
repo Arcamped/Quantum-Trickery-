@@ -36,7 +36,7 @@ print(n_qubits(number))
 
 #Is it better to use a list of lists with list length being variable? Or a dataframe
 #with zero-valued entries after search space exhaustion?
-trials = 50
+trials = 1000
 master = [[] for j in range(trials)]
 for j in range(trials) :
     #global container
@@ -79,7 +79,22 @@ with open("output1.csv",'w', newline='') as resultFile:
 df_results = pd.DataFrame(master1)
 df_results = df_results.transpose()
 df_results.index += 1
-print(df_results)
+df_results.shape
+# df_results.plot(kind='hist')
+# There has to be a better way to find UTTE...
+# For 2 qubits with 50 trials and max 30 iterations, UTTE = 8.12
+# For 2 qubits with 100 trials and max 30 iterations, UTTE = 8.76
+# For 2 qubits with 1000 trials and max 30 iterations, UTTE = 8.459
+counter = []
+for i in df_results:
+    place = (df_results[i] == 0).sum()
+    print((df_results[i] == 0).sum())
+    counter.append(place)
+len(counter)
+UTTE = 30 - sum(counter)/trials
+print(UTTE)
+
+
 
 # Much of the above workflow is the same, but using the Hadamard Gate (H()) is no
 # longer appropriate beyond first measurement.
