@@ -8,14 +8,13 @@
 # Monte Carlos for unmodified time to exhaustion (UTTE?)
 # Entanglement usage?
 
-
 from pyquil.quil import Program
 from pyquil.api import QVMConnection
 from pyquil.gates import H
 import numpy as np
 import pandas as pd
 import csv
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 qvm = QVMConnection()
 
 number = 2 # Sets number of qubits to use. Hardware limited to <= 19 (18?)
@@ -53,49 +52,46 @@ with open("output1.csv",'w', newline='') as resultFile:
     for value in master1:
         wr.writerow([value])
 
+
 # Turn master1 into DataFrame for manipulation/analysis.
 df_results = pd.DataFrame(master1)
-df_results = df_results.transpose()
 df_results.index += 1
-df_results.shape
 
-# Identifies how long it took each trial to reach exhaustion.
-# There has to be a better way to find exhaustion?
-counter = []
-for i in df_results:
-    place = (df_results[i] == 0).sum()
-    print((df_results[i] == 0).sum())
-    counter.append(place)
-len(counter)
-UTTE = depth - sum(counter)/trials
-print(UTTE)
+# Add column holding mean time to exhaustion by subtracting number of 0s from
+# depth of search. recall 0s are automatically written when unique results = number ** 2.
+df_results['exhaustion'] = df_results.apply(lambda row: depth - sum(row[:]==0) ,axis=1)
 
-# Visual inspection of data.
-unique_counter = list(set(counter))
-print(unique_counter)
 
-# Subtracts the number of zeros from 30 to get the number of steps it took to
-# reach search space exhaustion
-adjusted_counter[:] = [depth - value for value in counter]
+# Load chosen data:
+df_results = pd.read_pickle('2q_1000t_30d_1')
+df_results['exhaustion'].plot(kind='hist', bins = depth - number ** 2)
+print(df_graph)
 
-# Checking to make sure the list didn't lose any values
-adjusted_counter_unique = list(set(adjusted_counter))
-print(adjusted_counter_unique)
+# plt.show() is still empty.... And still can't axis labels because plt.show doesn't work...
+df_graph = df_results[['exhaustion']]
+df_graph.plot(kind='hist', bins = depth - number ** 2, xlim=([4,30]))
 
-#Need to set minimum bound as far left on graph. Where minimum bound is
-# number ** 2 representing a perfectly efficient search.
-plt.hist(adjusted_counter, bins = depth - number ** 2)
-plt.xlabel( x='Number of Draws Until Exhaustion')
 
-# This saves the results of the simulation.
-# (# qubits_#trials_#depth of each trial)
-df_results.to_pickle('2q_1000t_30d')
+import pickle
+# Save data frame for later
+# (# qubits_# of trials_depth of each trial_trial iteration number)
+df_results.to_pickle('2q_1000t_30d_1.pkl')
 
-# Histogram display problems... should be fixable if bins start at lower bound
-adjusted_counter.count(21)
 
 # Much of the above workflow is the same, but using the Hadamard Gate (H()) is no
 # longer appropriate beyond first measurement.
+
+
+## The objective is to adjust the wavefunctions appropriately so that the
+# modified time to exhaustion (MTTE) is < the UTTE. Obviously, given complete control
+# over probability amplitudes and perfect knowledge of past draws would
+# allow MTTE = number ** 2. Thus, allowed deviation from the 50-50 superposition
+# imposed by the Hadamard gate will be restricted to some set value dependent on
+# system size(?).
+
+print(1/ np.sqrt(2))
+print(wavefunction.amplitudes)
+
 # Instead, parametric gates will be used and updated between measurements.
 # Using the cartesian rotation gate of the form:
 
